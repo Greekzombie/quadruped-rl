@@ -34,7 +34,7 @@ class Logger():
         self.v_des = np.zeros([logSize, 3])
 
         # Observation by neural network
-        self.observation = np.zeros([logSize, Nobs])
+        self.observation = np.zeros([logSize, 235-187+693])    #P Modified
         self.computation_time = np.zeros(logSize)
 
         # Motion capture:
@@ -181,6 +181,8 @@ class Logger():
 
     def custom_suptitle(self, name):
         from matplotlib import pyplot as plt
+        import matplotlib
+        matplotlib.use('TkAgg')
 
         fig = plt.gcf()
         fig.suptitle(name)
@@ -188,6 +190,8 @@ class Logger():
 
     def plot(self, title, nrows, ncols, t_range, legends, observations, references=None, mocaps=None, **kwargs):
         from matplotlib import pyplot as plt
+        import matplotlib
+        matplotlib.use('TkAgg')
         plt.figure()
         for i, obs in enumerate(observations):
             if i == 0:
@@ -211,6 +215,8 @@ class Logger():
 
     def plotAll(self, dt, replay):
         from matplotlib import pyplot as plt
+        import matplotlib
+        matplotlib.use('TkAgg')
 
         t_range = np.array([k*dt for k in range(self.logSize)])
 
@@ -308,6 +314,8 @@ class Logger():
 
 def analyse_consumption():
     import matplotlib.pyplot as plt
+    import matplotlib
+    matplotlib.use('TkAgg')
     import numpy as np
     import glob
     files = np.sort(glob.glob('test_policies_2022_08_05/*.npz'))[:-2]

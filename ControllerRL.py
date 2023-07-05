@@ -31,7 +31,7 @@ class ControllerRL():
         # self.D = np.array([0., 0., 0.]*4)
 
         # Size
-        self._Nobs = 741
+        self._Nobs = 235 - 187 + 693   #P Modified
         self._Nact = 12
 
         # Observation
