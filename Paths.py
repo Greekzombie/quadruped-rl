@@ -1,1 +1,1 @@
-SOLO_URDF = "/opt/openrobots/share/example-robot-data/robots/solo_description/robots"
+SOLO_URDF = "/Documents/GitHub/example-robot-data/robots/solo_description/robots"

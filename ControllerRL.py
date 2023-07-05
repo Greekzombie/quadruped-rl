@@ -31,7 +31,7 @@ class ControllerRL():
         # self.D = np.array([0., 0., 0.]*4)
 
         # Size
-        self._Nobs = 235
+        self._Nobs = 235 - 187 + 693   #P Modified
         self._Nact = 12
 
         # Observation
@@ -105,7 +105,7 @@ class ControllerRL():
                                   (self.joints_pos - self.q_init) * self.scale_dof_pos,
                                   self.joints_vel * self.scale_dof_vel,
                                   self.act,
-                                  -1.5 * np.ones(187)])
+                                  0 * np.ones(693)])    #P Value that has to be modified accordingly
         self.obs[:] = np.clip(self.obs, -self.clip_observations, self.clip_observations)
         self.obs_torch[:] = torch.from_numpy(self.obs)
 
