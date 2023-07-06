@@ -62,6 +62,7 @@ class SoloRLDevice:
         else:
             heights = np.zeros(self.measure_points.shape[0]) # not implemented on real robot
 
+        # TODO this has changed in newer policies. #P DONE
         return self.device.dummyPos[2] - 0.215 - heights
 
     def damping_and_shutdown(self):     
