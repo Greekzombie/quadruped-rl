@@ -34,7 +34,7 @@ class Logger():
         self.v_des = np.zeros([logSize, 3])
 
         # Observation by neural network
-        self.observation = np.zeros([logSize, 235-187+693])    #P Modified
+        self.observation = np.zeros([logSize, 2449])    #P Modified OLD VALUES 235-187+693
         self.computation_time = np.zeros(logSize)
 
         # Motion capture:

@@ -7,9 +7,9 @@ class Params():
     def __init__(self):
         # Replay parameters
         self.replay_path = "demo_replay.npz"
-        self.SIMULATION = False  # Run the replay in simulation if True
-        self.LOGGING = True  # Save the logs of the experiments if True
-        self.PLOTTING = True  # Plot the logs of the experiments if True
+        self.SIMULATION = False  # Run the replay in simulation if True   #P Was set to False
+        self.LOGGING = True  # Save the logs of the experiments if True   #P Was set to True
+        self.PLOTTING = True  # Plot the logs of the experiments if True  #P Was set to True
 
         # Control parameters
         self.dt = 0.001  # Time step of the replay
@@ -23,14 +23,14 @@ class Params():
 class RLParams():
     def __init__(self):
         # Replay parameters
-        self.SIMULATION = True  # Run the replay in simulation if True
-        self.PYB_GUI = False # Enable PyBullet GUI if simulation is True
-        self.LOGGING = False # Save the logs of the experiments if True
-        self.PLOTTING = True # Save the logs of the experiments if True
-        self.max_steps = 8000
+        self.SIMULATION = True  # Run the replay in simulation if True   #P Was set to True
+        self.PYB_GUI = True # Enable PyBullet GUI if simulation is True   #P Was set to False
+        self.LOGGING = False # Save the logs of the experiments if True   #P Was set to False
+        self.PLOTTING = True # Save the logs of the experiments if True   #P Was set to True
+        self.max_steps = 40000
 
-        self.USE_JOYSTICK = False  # Control the robot with a joystick
-        self.USE_PREDEFINED = True  # Use a predefined velocity profile
+        self.USE_JOYSTICK = False  # Control the robot with a joystick   #P Was set to False
+        self.USE_PREDEFINED = True  # Use a predefined velocity profile   #P Was set to True
 
         # Control parameters
         self.dt = 0.001   
@@ -39,8 +39,8 @@ class RLParams():
         self.Kd = np.array([0.2, 0.2, 0.2]*4)  # Derivative gains for the PD+
         self.Kff = 0.0  # Feedforward torques multiplier for the PD+
 
-        self.enable_lateral_vel = True
-        self.symmetric_pose = True
+        self.enable_lateral_vel = True   #P Was set to True
+        self.symmetric_pose = True   #P Was set to True
 
         self.q_init = np.array([-0.04, 0.7, -1.4, 0.04, 0.7, -1.4, \
                                 -0.04, 0.7, -1.4, 0.04, 0.7, -1.4])
@@ -53,12 +53,13 @@ class RLParams():
 
         # Other parameters
         self.config_file = "config_solo12.yaml"  #  Name of the yaml file containing hardware information
-        self.record_video = False
+        self.record_video = False   #P Was set to False
         # only used in simulation; can be "plane", "rough" or "custom:/path/to/terrain"
         self.terrain_type = f"plane"
+        self.envID = 0
         self.custom_sampling_interval = 0.01
 
         # -- MUST MATCH THE INPUT OF THE POLICY --
-        self.measure_height = True
-        self.measure_x = np.arange(0.8, 0.805, 0.05)
-        self.measure_y = np.arange(-0.5, 0.505, 0.05)
+        self.measure_height = True   #P Was set to True
+        self.measure_x = np.arange(-1.2, 1.205, 0.05)
+        self.measure_y = np.arange(-1.2, 1.205, 0.05)

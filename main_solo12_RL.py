@@ -56,8 +56,9 @@ class SoloRLDevice:
     def init_robot_and_wait_floor(self):
          self.device, self.logger, _qc = initialize(self.params, self.policy._Nobs, self.params.q_init, np.zeros((12,)), 100000)
 
-    def height_map(self):
+    def height_map(self): #P This is called everytime the observations are updated
         if self.params.SIMULATION:
+            #P We give the function an array of x,y coordinates whose heights we wish to sample
             heights = self.device.terrain_height(self.measure_points)
         else:
             heights = np.zeros(self.measure_points.shape[0]) # not implemented on real robot
@@ -86,16 +87,22 @@ class SoloRLDevice:
         return np.array([vx, vy, wz])
     
     def _predefined_vel_cmd(self):
-        t_rise = 100  # rising time to max vel
-        t_duration = 500  # in number of iterations
+        t_rise = 50  # rising time to max vel
+        t_duration = 5000  # in number of iterations
         if self.k < t_rise + t_duration:
-            v_max = 1.0  # in m/s
+            v_max = 0.8  # in m/s
             v_gp = np.min([v_max * (self.k / t_rise), v_max])
         else:
             self.alpha_v_ref = 0.1
             v_gp = 0.0  # Stop the robot
+
+        if self.k < 100:
+            v = 0.1
+        else:
+            v = 0
+
         self.v_ref = self.alpha_v_ref * v_gp + (1 - self.alpha_v_ref) * self.v_ref  # Low-pass filter
-        return np.array([self.v_ref, 0, 0]) 
+        return np.array([self.v_ref, 0, v]) 
     
     def _random_cmd(self):
         vx = np.random.uniform(-0.5 , 1.5)
@@ -193,7 +200,7 @@ def main():
                 0., 0.9, -1.64,
                 0., 0.9 , -1.64 ])
     params.q_init = q_init
-    policy = ControllerRL("tmp_checkpoints/policy_1.pt", q_init, params.measure_height)
+    policy = ControllerRL("tmp_checkpoints/policy_1_torque_limit.pt", q_init, params.measure_height)
     
     device = SoloRLDevice(policy, params, "solo")
     device.control_loop()

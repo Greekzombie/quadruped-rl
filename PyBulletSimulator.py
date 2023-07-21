@@ -4,7 +4,64 @@ import pybullet_data
 import time as time
 import sys
 import pinocchio as pin
-from Paths import SOLO_URDF
+from Paths import SOLO_URDF, BAUZIL_STAIRS_URDF
+
+
+def create_stairs_with_gap():
+    # Create the red steps to act as small perturbations
+    mesh_scale = [0.3, 4, 0.1]
+    visualShapeId = pyb.createVisualShape(shapeType=pyb.GEOM_MESH,
+                                            fileName="cube.obj",
+                                            halfExtents=[m/2 for m in mesh_scale],
+                                            rgbaColor=[0.859, 0.659, 0.0, 1.0],
+                                            specularColor=[0.4, .4, 0],
+                                            visualFramePosition=[0.0, 0.0, 0.0],
+                                            meshScale=mesh_scale)
+
+    collisionShapeId = pyb.createCollisionShape(shapeType=pyb.GEOM_MESH,
+                                                fileName="cube.obj",
+                                                collisionFramePosition=[0.0, 0.0, 0.0],
+                                                meshScale=mesh_scale)
+
+    lateral_friction = 1
+    n_steps = 12
+    gap_size = 0.6
+    len_platform = 4
+
+    for i in range(n_steps):
+        tmpId = pyb.createMultiBody(baseMass=0.0,
+                                    baseInertialFramePosition=[0, 0, 0],
+                                    baseCollisionShapeIndex=collisionShapeId,
+                                    baseVisualShapeIndex=visualShapeId,
+                                    basePosition=[4.0 + mesh_scale[0]*i, 0, mesh_scale[2]/2 + mesh_scale[2]*i],
+                                    useMaximalCoordinates=True)
+        pyb.changeDynamics(tmpId, -1, lateralFriction=lateral_friction)
+
+    for a in range(len_platform):
+        tmpId = pyb.createMultiBody(baseMass=0.0,
+                                    baseInertialFramePosition=[0, 0, 0],
+                                    baseCollisionShapeIndex=collisionShapeId,
+                                    baseVisualShapeIndex=visualShapeId,
+                                    basePosition=[4.0 + mesh_scale[0]*(n_steps+a), 0, mesh_scale[2]/2 + mesh_scale[2]*(n_steps-1)],
+                                    useMaximalCoordinates=True)
+        pyb.changeDynamics(tmpId, -1, lateralFriction=lateral_friction)
+
+        tmpId = pyb.createMultiBody(baseMass=0.0,
+                                    baseInertialFramePosition=[0, 0, 0],
+                                    baseCollisionShapeIndex=collisionShapeId,
+                                    baseVisualShapeIndex=visualShapeId,
+                                    basePosition=[4.0 + mesh_scale[0]*(n_steps+a+len_platform)+gap_size, 0, mesh_scale[2]/2 + mesh_scale[2]*(n_steps-1)],
+                                    useMaximalCoordinates=True)
+        pyb.changeDynamics(tmpId, -1, lateralFriction=lateral_friction)
+
+    for j in range(n_steps):
+        tmpId = pyb.createMultiBody(baseMass=0.0,
+                                        baseInertialFramePosition=[0, 0, 0],
+                                        baseCollisionShapeIndex=collisionShapeId,
+                                        baseVisualShapeIndex=visualShapeId,
+                                        basePosition=[4.0 + mesh_scale[0]*(n_steps+j+2*len_platform) + gap_size, 0, mesh_scale[2]/2 + mesh_scale[2]*(n_steps-1-j)],
+                                        useMaximalCoordinates=True)
+        pyb.changeDynamics(tmpId, -1, lateralFriction=lateral_friction)
 
 
 class pybullet_simulator:
@@ -55,6 +112,35 @@ class pybullet_simulator:
         
             self.height_map = np.zeros((1,))
             self.sampling_bounds = [0, 0, 1, 1, 1]
+
+            # We now create the environment of stairs with a gap.
+            create_stairs_with_gap()
+
+            #P WE NOW DEFINE THE HEIGHT MAP. We have to define the height map over the entire terrain the robot will cover. 
+            #
+            # For each (x, y) coordinate on the grid, a ray is cast from a point above the maximum z-coordinate (maxz+1) to a point 
+            # below the minimum z-coordinate (minz-1). The rayTest function returns a list of information about the objects hit by 
+            # the ray, including the hit position and normal. In this case, only the hit position is of interest.
+            minx = -2
+            maxx = 30
+            miny = -2
+            maxy = 2
+            minz = 0
+            maxz = 5
+
+            x_pts = np.arange(minx, maxx+sampling_interval, sampling_interval)
+            y_pts = np.arange(miny, maxy+sampling_interval, sampling_interval)
+            x, y = np.meshgrid(x_pts, y_pts)
+
+            print("Sampling height map...", end="")
+            self.height_map = np.zeros_like(x)
+
+            for i in range(x.shape[0]):
+                for j in range(x.shape[1]):
+                    self.height_map[i,j] = pyb.rayTest([x[i,j], y[i,j], maxz+1], [x[i,j], y[i,j], minz-1])[0][3][2]
+
+            self.sampling_bounds = [minx, miny, *self.height_map.shape[0:2], sampling_interval]
+            self.height_map = self.height_map.flatten()
 
         elif terrain_type == "rough":
             import random
@@ -141,10 +227,12 @@ class pybullet_simulator:
         if envID == 1:
 
             # Add stairs with platform and bridge
-            self.stairsId = pyb.loadURDF("bauzil_stairs.urdf")  # ,
+            #P Might have to add in a new search path
+            pyb.setAdditionalSearchPath(BAUZIL_STAIRS_URDF)
+            #P self.stairsId = pyb.loadURDF("bauzil_stairs.urdf") 
             """basePosition=[-1.25, 3.5, -0.1],
                                  baseOrientation=pyb.getQuaternionFromEuler([0.0, 0.0, 3.1415]))"""
-            pyb.changeDynamics(self.stairsId, -1, lateralFriction=1.0)
+            #P pyb.changeDynamics(self.stairsId, -1, lateralFriction=1.0)
 
             # Create the red steps to act as small perturbations
             mesh_scale = [1.0, 0.1, 0.02]
@@ -330,7 +418,7 @@ class pybullet_simulator:
                 i_min = i
             i += 1
 
-        # Set base at (0, 0, -z_min) so that the lowest foot is at z = 0
+        # Set base at (0, 0, -z_min) so that the lowest foot is at z = 0          #P ROBOT INITIALISED POSITION
         pyb.resetBasePositionAndOrientation(self.robotId, [0.0, 0.0, -z_min], pin.Quaternion(pin.rpy.rpyToMatrix(p_roll, p_pitch, 0.0)).coeffs())
 
         # Progressively raise the base to achieve proper contact (take into account radius of the foot)
@@ -346,7 +434,7 @@ class pybullet_simulator:
         pyb.setTimeStep(dt)
 
         # Change camera position
-        pyb.resetDebugVisualizerCamera(cameraDistance=0.6, cameraYaw=45, cameraPitch=-39.9,
+        pyb.resetDebugVisualizerCamera(cameraDistance=0.8, cameraYaw=20, cameraPitch=-39.9,
                                        cameraTargetPosition=[0.0, 0.0, robotStartPos[2]-0.2])
 
     def check_pyb_env(self, k, envID, velID, qmes12):
@@ -442,8 +530,8 @@ class pybullet_simulator:
         RPY = pin.rpy.matrixToRpy(oMb_tmp.rotation)
 
         # Update the PyBullet camera on the robot position to do as if it was attached to the robot
-        pyb.resetDebugVisualizerCamera(cameraDistance=0.6, cameraYaw=(0.0*RPY[2]*(180/3.1415)+45), cameraPitch=-39.9,
-                                       cameraTargetPosition=[qmes12[0,0], qmes12[1,0] + 0.0, 0.0])
+        pyb.resetDebugVisualizerCamera(cameraDistance=0.8, cameraYaw=(0.0*RPY[2]*(180/3.1415)+45), cameraPitch=-39.9*0.1,
+                                       cameraTargetPosition=[qmes12[0,0], qmes12[1,0] + 0.0, qmes12[2,0]])
 
         return 0
 
@@ -747,13 +835,17 @@ class PyBulletSimulator():
                                                 depending on the value of parameter robot_frame
         robot_frame (bool): whether the coordinates are expressed in the robot's frame
 
+        #P The code uses the ravel_multi_index function to convert the 2D integer coordinates into a flat index.
+        #P This index is used to access the corresponding terrain height values stored in the height_map.
+        #P So technically, we shouldn't have to modify this function.
+
         Returns:
             a numpy array with the same shape as 'points' (except the last dimension is removed)
         """
         if robot_frame:
             points = np.concatenate((points, np.zeros_like(points[..., 0:1])), axis=-1)[..., None]
             points = pin.rpy.rpyToMatrix(np.array([0, 0, self.imu.attitude_euler[2]]))[None] @ points
-            points = (points.squeeze(-1) + self.dummyPos)[..., :2]
+            points = (points.squeeze(-1) + self.dummyPos)[..., :2]  # Shape: [..., 2]
 
         _c = points.copy()
     
@@ -856,10 +948,10 @@ class PyBulletSimulator():
         # Compute one step of simulation
         pyb.stepSimulation()
 
-        pyb.resetDebugVisualizerCamera(cameraDistance=0.6, 
-                                       cameraYaw=(0.0*self.imu.attitude_euler[2]*(180/3.1415)+45),
-                                       cameraPitch=-39.9,
-                                       cameraTargetPosition=[self.baseState[0][0], self.baseState[0][1] + 0.0, 0.0])
+        pyb.resetDebugVisualizerCamera(cameraDistance=0.8, 
+                                       cameraYaw=(0.0*self.imu.attitude_euler[2]*(180/3.1415)+20),
+                                       cameraPitch=-39.9*0.1,
+                                       cameraTargetPosition=[self.baseState[0][0], self.baseState[0][1] + 0.0, self.baseState[0][2]])
 
         # Wait to have simulation time = real time
         if WaitEndOfCycle:

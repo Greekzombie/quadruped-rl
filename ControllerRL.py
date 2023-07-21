@@ -31,7 +31,7 @@ class ControllerRL():
         # self.D = np.array([0., 0., 0.]*4)
 
         # Size
-        self._Nobs = 235 - 187 + 693   #P Modified
+        self._Nobs = 2449  #P Modified  OLD VALUES 235 - 187 + 693 = 48 + 693
         self._Nact = 12
 
         # Observation
@@ -44,7 +44,7 @@ class ControllerRL():
         
         self.measure_height = measure_height
         if measure_height:
-            self.height_map = np.zeros(self._Nobs - 48)
+            self.height_map = np.zeros(self._Nobs - 48) #P 48 is the number of inputs that do not correspond to terrain observations
 
         self.orientation_quat = torch.zeros(1, 4)
         self.projected_gravity = np.zeros(3)
