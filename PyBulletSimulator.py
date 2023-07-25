@@ -24,9 +24,9 @@ def create_stairs_with_gap():
                                                 meshScale=mesh_scale)
 
     lateral_friction = 1
-    n_steps = 12
-    gap_size = 0.6
-    len_platform = 4
+    n_steps = 6
+    gap_size = 0.4
+    len_platform = 6
 
     for i in range(n_steps):
         tmpId = pyb.createMultiBody(baseMass=0.0,
@@ -617,8 +617,8 @@ class pybullet_simulator:
 
         # PD settings
         P = 1.0 * 3.0
-        D = 0.05 * np.array([[1.0, 0.3, 0.3, 1.0, 0.3, 0.3,
-                              1.0, 0.3, 0.3, 1.0, 0.3, 0.3]]).transpose()
+        D = 0.2 #0.05 * np.array([[1.0, 0.3, 0.3, 1.0, 0.3, 0.3,
+                #              1.0, 0.3, 0.3, 1.0, 0.3, 0.3]]).transpose()
 
         while True or np.max(np.abs(qtarget - qmes)) > 0.1:
 
@@ -639,7 +639,7 @@ class pybullet_simulator:
             jointTorques = P * (qdes - qmes) + D * (vdes - vmes)
 
             # Saturation to limit the maximal torque
-            t_max = 2.5
+            t_max = 2.5   #P MODIFIED In Isaac gym, max allowed torque is 3
             jointTorques[jointTorques > t_max] = t_max
             jointTorques[jointTorques < -t_max] = -t_max
 
@@ -790,8 +790,8 @@ class PyBulletSimulator():
         self.prev_o_imuVel = np.zeros((3, 1))
 
         # PD+ quantities
-        self.P = 0.0
-        self.D = 0.0
+        self.P = 0    #P Value used to be 0
+        self.D = 0   #P Value used to be 0
         self.q_des = np.zeros(12)
         self.v_des = np.zeros(12)
         self.tau_ff = np.zeros(12)
@@ -865,6 +865,18 @@ class PyBulletSimulator():
 
         return self.pyb_sim.height_map[coords]
 
+    def height_robot_base(self):
+        """P
+        Get the height of the robot's base in the world frame.
+        """
+        # Get the base position of the robot in the world frame
+        base_position, _ = pyb.getBasePositionAndOrientation(self.pyb_sim.robotId)
+
+        # Extract the height (z-coordinate) of the base position
+        base_height = base_position[2]
+
+        return base_height
+
     def cross3(self, left, right):
         """Numpy is inefficient for this
 
@@ -935,8 +947,12 @@ class PyBulletSimulator():
         # Compute PD torques
         tau_pd = self.P * (self.q_des - self.joints.positions) + self.D * (self.v_des - self.joints.velocities)
 
-        # Save desired torques in a storage array
-        self.jointTorques = (tau_pd + self.tau_ff).clip(-3,3)
+        # Save desired torques in a storage array   #P self.tau_ff is 0
+        self.jointTorques = (tau_pd + self.tau_ff).clip(-3,3)   #P What is used to clip the torques.
+
+        if np.max(np.abs(self.jointTorques)) > 2.5:
+            print(np.max(np.abs(self.jointTorques)))
+            print(" ")
 
         # Low pass filter the torques
         self.filterTorques = self._alpha * self.filterTorques + (1 - self._alpha) * self.jointTorques

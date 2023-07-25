@@ -60,11 +60,11 @@ class ControllerRL():
         self.scale_ang_vel = 0.25
         self.scale_dof_pos = 1.0
         self.scale_dof_vel = 0.05
-        self.scale_height_map = 5
+        self.scale_height_map = 5  #P Coincides with Isaac Gym
         
         self.clip_observations = 100.
         self.clip_actions = 100.
-        self.clip_height_map = 1
+        self.clip_height_map = 0.25 #P Old value is 1. Value in IsaacGym is 0.25
 
         # Load model
         self.model = torch.jit.load(filename)
@@ -120,6 +120,9 @@ class ControllerRL():
         if height_map is not None:
             self.height_map[:] = height_map.clip(-self.clip_height_map, self.clip_height_map)
             self.obs[48:] = self.height_map * self.scale_height_map
+
+        print(f"Max: {np.max(self.obs[48:])}   Min: {np.min(self.obs[48:])}")
+        print(" ")
 
         self.obs[:] = np.clip(self.obs, -self.clip_observations, self.clip_observations)
         self.obs_torch[:] = torch.from_numpy(self.obs)

@@ -64,7 +64,13 @@ class SoloRLDevice:
             heights = np.zeros(self.measure_points.shape[0]) # not implemented on real robot
 
         # TODO this has changed in newer policies. #P DONE
-        return self.device.dummyPos[2] - 0.215 - heights
+        # BEFORE: self.device.dummyPos[2] - 0.215 - heights
+        # self.device.dummyPos[2] should be the height of the robot's base relative to the world frame
+
+        # Extract the height (z-coordinate) of the base position
+        base_height = self.device.height_robot_base()    #P NEW FUNCTION
+
+        return base_height - 0.215 - heights
 
     def damping_and_shutdown(self):     
         device = self.device
@@ -200,7 +206,7 @@ def main():
                 0., 0.9, -1.64,
                 0., 0.9 , -1.64 ])
     params.q_init = q_init
-    policy = ControllerRL("tmp_checkpoints/policy_1_torque_limit.pt", q_init, params.measure_height)
+    policy = ControllerRL("tmp_checkpoints/policy_1_harsh_torque_limit_100.pt", q_init, params.measure_height)
     
     device = SoloRLDevice(policy, params, "solo")
     device.control_loop()
