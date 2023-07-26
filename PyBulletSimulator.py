@@ -25,7 +25,7 @@ def create_stairs_with_gap():
 
     lateral_friction = 1
     n_steps = 6
-    gap_size = 0.4
+    gap_size = 0.7
     len_platform = 6
 
     for i in range(n_steps):
@@ -615,9 +615,9 @@ class pybullet_simulator:
         t1 = 4.0  # seconds
         cpt = 0
 
-        # PD settings
+        # PD settings #P PD settings that are used
         P = 1.0 * 3.0
-        D = 0.2 #0.05 * np.array([[1.0, 0.3, 0.3, 1.0, 0.3, 0.3,
+        D = 0.2 * 1000 #0.05 * np.array([[1.0, 0.3, 0.3, 1.0, 0.3, 0.3,
                 #              1.0, 0.3, 0.3, 1.0, 0.3, 0.3]]).transpose()
 
         while True or np.max(np.abs(qtarget - qmes)) > 0.1:
@@ -935,6 +935,8 @@ class PyBulletSimulator():
     def send_command_and_wait_end_of_cycle(self, WaitEndOfCycle=True):
         """Send control commands to the robot
 
+        #P PD values defined in ControllerRL.py 
+
         Args:
             WaitEndOfCycle (bool): wait to have simulation time = real time
         """
@@ -946,13 +948,17 @@ class PyBulletSimulator():
 
         # Compute PD torques
         tau_pd = self.P * (self.q_des - self.joints.positions) + self.D * (self.v_des - self.joints.velocities)
+        #print(self.P)
+        #print(self.D)
+        #print((self.P * (self.q_des - self.joints.positions))/(self.D * (self.v_des - self.joints.velocities)))
+        #print(" ")
 
         # Save desired torques in a storage array   #P self.tau_ff is 0
         self.jointTorques = (tau_pd + self.tau_ff).clip(-3,3)   #P What is used to clip the torques.
 
-        if np.max(np.abs(self.jointTorques)) > 2.5:
-            print(np.max(np.abs(self.jointTorques)))
-            print(" ")
+        #if np.max(np.abs(self.jointTorques)) > 2.5:
+            #print(np.max(np.abs(self.jointTorques)))
+            #print(" ")
 
         # Low pass filter the torques
         self.filterTorques = self._alpha * self.filterTorques + (1 - self._alpha) * self.jointTorques

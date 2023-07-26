@@ -206,7 +206,7 @@ def main():
                 0., 0.9, -1.64,
                 0., 0.9 , -1.64 ])
     params.q_init = q_init
-    policy = ControllerRL("tmp_checkpoints/policy_1_harsh_torque_limit_100.pt", q_init, params.measure_height)
+    policy = ControllerRL("tmp_checkpoints/policy_1_harsh_torque_limit_100_more.pt", q_init, params.measure_height)
     
     device = SoloRLDevice(policy, params, "solo")
     device.control_loop()

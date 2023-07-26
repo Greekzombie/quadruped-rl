@@ -11,7 +11,7 @@ class Params():
         self.LOGGING = True  # Save the logs of the experiments if True   #P Was set to True
         self.PLOTTING = True  # Plot the logs of the experiments if True  #P Was set to True
 
-        # Control parameters
+        # Control parameters #P Not used in the actual code I think
         self.dt = 0.001  # Time step of the replay
         self.Kp = np.array([6.0, 6.0, 6.0])  # Proportional gains for the PD+
         self.Kd = np.array([0.3, 0.3, 0.3])  # Derivative gains for the PD+
@@ -27,7 +27,7 @@ class RLParams():
         self.PYB_GUI = True # Enable PyBullet GUI if simulation is True   #P Was set to False
         self.LOGGING = False # Save the logs of the experiments if True   #P Was set to False
         self.PLOTTING = True # Save the logs of the experiments if True   #P Was set to True
-        self.max_steps = 40000
+        self.max_steps = 20000
 
         self.USE_JOYSTICK = False  # Control the robot with a joystick   #P Was set to False
         self.USE_PREDEFINED = True  # Use a predefined velocity profile   #P Was set to True

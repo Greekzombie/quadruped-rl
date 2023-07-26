@@ -24,9 +24,9 @@ class ControllerRL():
             - filename (str) : path of the torch.jit model.
             - q_init (np.array(12)) : initial joint position
         """
-        # Control gains
-        self.P =  np.array([3.0, 3.0, 3.0]*4)
-        self.D = np.array([0.2, 0.2, 0.2]*4)
+        # Control gains  #P MODIFY PD VALUES HERE
+        self.P =  np.array([2.8, 2.8, 2.8]*4)
+        self.D = np.array([0.23, 0.23, 0.23]*4)
         # self.P =  np.array([0.0, 0.0, 0.0]*4)
         # self.D = np.array([0., 0., 0.]*4)
 
@@ -121,8 +121,8 @@ class ControllerRL():
             self.height_map[:] = height_map.clip(-self.clip_height_map, self.clip_height_map)
             self.obs[48:] = self.height_map * self.scale_height_map
 
-        print(f"Max: {np.max(self.obs[48:])}   Min: {np.min(self.obs[48:])}")
-        print(" ")
+        #print(f"Max: {np.max(self.obs[48:])}   Min: {np.min(self.obs[48:])}")
+        #print(" ")
 
         self.obs[:] = np.clip(self.obs, -self.clip_observations, self.clip_observations)
         self.obs_torch[:] = torch.from_numpy(self.obs)
