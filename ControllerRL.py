@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import pinocchio as pin
 from time import time as clock
+from Params import RLParams
 
 # from isaac gym utils
 # @torch.jit.script
@@ -27,24 +28,32 @@ class ControllerRL():
         # Control gains  #P MODIFY PD VALUES HERE
         self.P =  np.array([3, 3, 3]*4)
         self.D = np.array([0.2, 0.2, 0.2]*4)
+        self.params = RLParams()
         # self.P =  np.array([0.0, 0.0, 0.0]*4)
         # self.D = np.array([0., 0., 0.]*4)
 
         # Size
+        self.N_inputs_not_terrain = 48
         self._Nobs = 2449  #P Modified  OLD VALUES 235 - 187 + 693 = 48 + 693
         self._Nact = 12
+        self._Ndof = 12
+
+        if self.params.variable_PD:
+            self.N_inputs_not_terrain += 2
+            self._Nobs += 2
+            self._Nact += 2
 
         # Observation
         self.obs = np.zeros(self._Nobs)
         self.obs_torch = torch.zeros(1, self._Nobs)
         self.act = np.zeros(self._Nact)
         self.vel_command = np.array([0.,0.,0.])
-        self.joints_pos = np.zeros(self._Nact)
-        self.joints_vel = np.zeros(self._Nact)
+        self.joints_pos = np.zeros(self._Ndof)
+        self.joints_vel = np.zeros(self._Ndof)
         
         self.measure_height = measure_height
         if measure_height:
-            self.height_map = np.zeros(self._Nobs - 48) #P 48 is the number of inputs that do not correspond to terrain observations
+            self.height_map = np.zeros(self._Nobs - self.N_inputs_not_terrain) #P 48 or 50 is the number of inputs that do not correspond to terrain observations
 
         self.orientation_quat = torch.zeros(1, 4)
         self.projected_gravity = np.zeros(3)
@@ -65,6 +74,8 @@ class ControllerRL():
         self.clip_observations = 100.
         self.clip_actions = 100.
         self.clip_height_map = 0.25 #P Old value is 1. Value in IsaacGym is 0.25
+        self.clip_P_gain_modification = 2   #P
+        self.clip_D_gain_modification = 0.2
 
         # Load model
         self.model = torch.jit.load(filename)
@@ -85,13 +96,19 @@ class ControllerRL():
           
         self._t2 = clock()
        
-        
+        #P Here, we do forward pass on policy network
         self.act[:] = self.model(self.obs_torch).detach()[0]
-        self.act[:] = np.clip(self.act, -self.clip_actions, self.clip_actions)
+
+        #P We now clip actions corresponding to joint positions
+        self.act[:self._Ndof] = np.clip(self.act[:self._Ndof], -self.clip_actions, self.clip_actions)
+        #P We now apply tanh to action outputs corresponding to PD modifications
+        if self.params.variable_PD:
+            self.act[-2] = np.tanh(self.act[-2]/4) * self.clip_P_gain_modification
+            self.act[-1] = np.tanh(self.act[-1]/4) * self.clip_D_gain_modification
         
         self._t3 = clock()
 
-        self.q_des[:] = self.act * self.scale_actions + self.q_init
+        self.q_des[:] = self.act[:self._Ndof] * self.scale_actions + self.q_init
         return self.q_des# self.q_init
     
     def update_observation(self, base_speed, joints_pos, joints_vel, orientation_quat, imu_gyro, height_map=None):
@@ -108,7 +125,7 @@ class ControllerRL():
         self.base_speed[:] = base_speed.flatten()
         self.base_ang_vel[:] = imu_gyro.flatten()
         
-        self.obs[:48] = np.hstack([self.base_speed * self.scale_lin_vel,
+        self.obs[:self.N_inputs_not_terrain] = np.hstack([self.base_speed * self.scale_lin_vel,
                                   self.base_ang_vel * self.scale_ang_vel,
                                   self.projected_gravity,
                                   self.vel_command * self.scale_cmd,
@@ -119,7 +136,7 @@ class ControllerRL():
         
         if height_map is not None:
             self.height_map[:] = height_map.clip(-self.clip_height_map, self.clip_height_map)
-            self.obs[48:] = self.height_map * self.scale_height_map
+            self.obs[self.N_inputs_not_terrain:] = self.height_map * self.scale_height_map
 
         #print(f"Max: {np.max(self.obs[48:])}   Min: {np.min(self.obs[48:])}")
         #print(" ")

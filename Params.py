@@ -63,3 +63,4 @@ class RLParams():
         self.measure_height = True   #P Was set to True
         self.measure_x = np.arange(-1.2, 1.205, 0.05)
         self.measure_y = np.arange(-1.2, 1.205, 0.05)
+        self.variable_PD = True  

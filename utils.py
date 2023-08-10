@@ -12,7 +12,7 @@ def get_input():
     # thread doesn't continue until key is pressed
     # and so it remains alive
 
-def put_on_the_floor(device, params, q_init, tau_init):
+def put_on_the_floor(policy, device, params, q_init, tau_init):
     """Make the robot go to the default initial position and wait for the user
     to press the Enter key to start the main control loop
 
@@ -43,7 +43,7 @@ def put_on_the_floor(device, params, q_init, tau_init):
 
     while i.is_alive():
         device.parse_sensor_data()
-        device.send_command_and_wait_end_of_cycle(params.dt)
+        device.send_command_and_wait_end_of_cycle(policy, False, params.dt)
 
     # Slow increase till we reach full starting torques
     duration_increase = 2.0  # in seconds
@@ -51,11 +51,11 @@ def put_on_the_floor(device, params, q_init, tau_init):
     for i in range(steps):
         device.joints.set_torques(tau_init * i / steps)
         device.parse_sensor_data()
-        device.send_command_and_wait_end_of_cycle(params.dt)
+        device.send_command_and_wait_end_of_cycle(policy, False, params.dt)
 
     print("Start the motion.")
 
-def initialize(params, Nobs, q_init, tau_init, N):
+def initialize(policy, params, Nobs, q_init, tau_init, N):
     """
     Initialize the connection with the robot or the simulation
 
@@ -83,7 +83,7 @@ def initialize(params, Nobs, q_init, tau_init, N):
 
     # If we want to log or plot, create logger
     if params.LOGGING or params.PLOTTING:
-        logger = Logger(Nobs, device, qualisys=qc, logSize=N, SIMULATION=params.SIMULATION)
+        logger = Logger(Nobs, params, device, qualisys=qc, logSize=N, SIMULATION=params.SIMULATION)
     else:
         logger = None
 
@@ -100,11 +100,11 @@ def initialize(params, Nobs, q_init, tau_init, N):
         device.parse_sensor_data()
 
         # Wait for Enter input before starting the control loop
-        put_on_the_floor(device, params, q_init, tau_init)
+        put_on_the_floor(policy, device, params, q_init, tau_init)
     
     return device, logger, qc
 
-def damping(device, params):
+def damping(policy, device, params):
     """
     Apply damping to the actuators to slowly shut down on the floor
 
@@ -128,7 +128,7 @@ def damping(device, params):
         device.joints.set_torques(np.zeros(12))
 
         # Send command to the robot
-        device.send_command_and_wait_end_of_cycle(params.dt)
+        device.send_command_and_wait_end_of_cycle(policy, True, params.dt)
         if (t % 1) < 5e-5:
             print('IMU attitude:', device.imu.attitude_euler)
             print('joint pos   :', device.joints.positions)
@@ -137,7 +137,7 @@ def damping(device, params):
 
         t += params.dt
 
-def shutdown(device, params, replay=None, logger=None):
+def shutdown(policy, device, params, replay=None, logger=None):
     """
     Shut down the connection with the robot and plot/log if necessary
 
@@ -149,7 +149,7 @@ def shutdown(device, params, replay=None, logger=None):
 
     # Whatever happened we send 0 torques to the motors.
     device.joints.set_torques(np.zeros(12))
-    device.send_command_and_wait_end_of_cycle(params.dt)
+    device.send_command_and_wait_end_of_cycle(policy, True, params.dt)
 
     if device.is_timeout:
         print("Masterboard timeout detected.")

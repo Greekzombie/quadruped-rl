@@ -5,6 +5,7 @@ import time as time
 import sys
 import pinocchio as pin
 from Paths import SOLO_URDF, BAUZIL_STAIRS_URDF
+from Params import RLParams
 
 
 def create_stairs_with_gap():
@@ -25,7 +26,7 @@ def create_stairs_with_gap():
 
     lateral_friction = 1
     n_steps = 6
-    gap_size = 0.7
+    gap_size = 0.2
     len_platform = 6
 
     for i in range(n_steps):
@@ -617,7 +618,7 @@ class pybullet_simulator:
 
         # PD settings #P PD settings that are used
         P = 1.0 * 3.0
-        D = 0.2 * 1000 #0.05 * np.array([[1.0, 0.3, 0.3, 1.0, 0.3, 0.3,
+        D = 0.2 #0.05 * np.array([[1.0, 0.3, 0.3, 1.0, 0.3, 0.3,
                 #              1.0, 0.3, 0.3, 1.0, 0.3, 0.3]]).transpose()
 
         while True or np.max(np.abs(qtarget - qmes)) > 0.1:
@@ -639,7 +640,7 @@ class pybullet_simulator:
             jointTorques = P * (qdes - qmes) + D * (vdes - vmes)
 
             # Saturation to limit the maximal torque
-            t_max = 2.5   #P MODIFIED In Isaac gym, max allowed torque is 3
+            t_max = 3   #P MODIFIED In Isaac gym, max allowed torque is 3
             jointTorques[jointTorques > t_max] = t_max
             jointTorques[jointTorques < -t_max] = -t_max
 
@@ -932,12 +933,14 @@ class PyBulletSimulator():
 
         return
 
-    def send_command_and_wait_end_of_cycle(self, WaitEndOfCycle=True):
+    def send_command_and_wait_end_of_cycle(self, policy, turnOffVariablePD = False, WaitEndOfCycle=True):
         """Send control commands to the robot
 
         #P PD values defined in ControllerRL.py 
 
         Args:
+            turnOffVariablePD: Turns off variable PD manually. Useful at the end of the simulation when damping the robot's 
+                actuators to slowly shut down on the floor.
             WaitEndOfCycle (bool): wait to have simulation time = real time
         """
 
@@ -947,7 +950,14 @@ class PyBulletSimulator():
         self.joints.velocities[:] = np.array([state[1] for state in jointStates])
 
         # Compute PD torques
-        tau_pd = self.P * (self.q_des - self.joints.positions) + self.D * (self.v_des - self.joints.velocities)
+        if policy.params.variable_PD and not turnOffVariablePD:
+            p_gains = self.P + policy.act[-2]
+            d_gains = self.D + policy.act[-1]
+        else:
+            p_gains = self.P
+            d_gains = self.D
+
+        tau_pd = p_gains * (self.q_des - self.joints.positions) + d_gains * (self.v_des - self.joints.velocities)
         #print(self.P)
         #print(self.D)
         #print((self.P * (self.q_des - self.joints.positions))/(self.D * (self.v_des - self.joints.velocities)))

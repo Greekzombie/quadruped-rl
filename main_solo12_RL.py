@@ -54,7 +54,7 @@ class SoloRLDevice:
         self.k = 0
 
     def init_robot_and_wait_floor(self):
-         self.device, self.logger, _qc = initialize(self.params, self.policy._Nobs, self.params.q_init, np.zeros((12,)), 100000)
+         self.device, self.logger, _qc = initialize(self.policy, self.params, self.policy._Nobs, self.params.q_init, np.zeros((12,)), 100000)
 
     def height_map(self): #P This is called everytime the observations are updated
         if self.params.SIMULATION:
@@ -76,10 +76,10 @@ class SoloRLDevice:
         device = self.device
 
         # DAMPING TO GET ON THE GROUND PROGRESSIVELY *********************
-        damping(device, self.params)
+        damping(self.policy, device, self.params)
 
         # FINAL SHUTDOWN *************************************************
-        shutdown(device, self.params)
+        shutdown(self.policy, device, self.params)
 
     def _parse_joystick_cmd(self):
         joystick = self.joystick
@@ -158,7 +158,7 @@ class SoloRLDevice:
                 self.joystick.update_v_ref()
 
             device.parse_sensor_data()
-            device.send_command_and_wait_end_of_cycle(params.dt)
+            device.send_command_and_wait_end_of_cycle(policy, False, params.dt) #policy.act is updated as we called .forward() before
 
             if params.LOGGING or params.PLOTTING:
                 self.logger.sample(policy, policy.q_des, policy.vel_command,
@@ -206,7 +206,7 @@ def main():
                 0., 0.9, -1.64,
                 0., 0.9 , -1.64 ])
     params.q_init = q_init
-    policy = ControllerRL("tmp_checkpoints/policy_1_harsh_torque_limit_100_more.pt", q_init, params.measure_height)
+    policy = ControllerRL("tmp_checkpoints/policy_1_variable_PD.pt", q_init, params.measure_height)
     
     device = SoloRLDevice(policy, params, "solo")
     device.control_loop()
