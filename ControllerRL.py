@@ -25,8 +25,8 @@ class ControllerRL():
             - q_init (np.array(12)) : initial joint position
         """
         # Control gains  #P MODIFY PD VALUES HERE
-        self.P =  np.array([2.8, 2.8, 2.8]*4)
-        self.D = np.array([0.23, 0.23, 0.23]*4)
+        self.P =  np.array([3, 3, 3]*4)
+        self.D = np.array([0.2, 0.2, 0.2]*4)
         # self.P =  np.array([0.0, 0.0, 0.0]*4)
         # self.D = np.array([0., 0., 0.]*4)
 
