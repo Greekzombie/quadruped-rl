@@ -26,7 +26,7 @@ def create_stairs_with_gap():
 
     lateral_friction = 1
     n_steps = 6
-    gap_size = 0.2
+    gap_size = 0
     len_platform = 6
 
     for i in range(n_steps):

@@ -102,13 +102,8 @@ class SoloRLDevice:
             self.alpha_v_ref = 0.1
             v_gp = 0.0  # Stop the robot
 
-        if self.k < 100:
-            v = 0.1
-        else:
-            v = 0
-
         self.v_ref = self.alpha_v_ref * v_gp + (1 - self.alpha_v_ref) * self.v_ref  # Low-pass filter
-        return np.array([self.v_ref, 0, v]) 
+        return np.array([self.v_ref, 0, 0]) 
     
     def _random_cmd(self):
         vx = np.random.uniform(-0.5 , 1.5)
@@ -206,7 +201,7 @@ def main():
                 0., 0.9, -1.64,
                 0., 0.9 , -1.64 ])
     params.q_init = q_init
-    policy = ControllerRL("tmp_checkpoints/policy_1_variable_PD.pt", q_init, params.measure_height)
+    policy = ControllerRL("tmp_checkpoints/policy_1_base30k_P_2point2.pt", q_init, params.measure_height)
     
     device = SoloRLDevice(policy, params, "solo")
     device.control_loop()
